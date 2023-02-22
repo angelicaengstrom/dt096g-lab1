@@ -45,6 +45,7 @@ level *parser::parse_level() {
                 it++;
                 if(lex.get_current(it, last) == lexer::RBRACKET){
                     lvl->digit = d;
+                    return lvl;
                 }
             }
         }
@@ -83,10 +84,6 @@ subexpression *parser::parse_subexpression() {
             auto sub = new subexpression();
             sub->children.push_back(id_expressions);
             it++;
-            /*auto id_ignore = parse_ignore();
-            if(id_ignore){
-                sub->children.push_back(id_ignore);
-            }*/
             return sub;
         }
         throw std::invalid_argument("Couldn't resolve subexpression");
@@ -186,11 +183,20 @@ count *parser::parse_count(operand* op) {
 //<operand> := <string> | <subexpression>
 operand *parser::parse_operand() {
     auto id_string = parse_string();
-    auto id_subexpression = parse_subexpression();
-    if(id_string || id_subexpression){
+    if(id_string){
         auto op = new operand();
-        if(id_string){ op->children.push_back(id_string); }
-        else{ op->children.push_back(id_subexpression); }
+        op->children.push_back(id_string);
+
+        auto id_ignore = parse_ignore();
+        if(id_ignore){
+            op->ignore = true;
+        }
+        return op;
+    }
+    auto id_subexpression = parse_subexpression();
+    if(id_subexpression){
+        auto op = new operand();
+        op->children.push_back(id_subexpression);
 
         auto id_ignore = parse_ignore();
         if(id_ignore){

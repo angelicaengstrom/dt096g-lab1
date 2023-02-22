@@ -15,11 +15,11 @@ class parser {
     expressions* parse_expressions();
     expression* parse_expression();
     subexpression* parse_subexpression();
-    ignore* parse_ignore();
     either* parse_either(operand* op);
     many* parse_many(operand* op);
     count* parse_count(operand* op);
     operand* parse_operand();
+    ignore* parse_ignore();
     string* parse_string();
     match* matcher{};
     lexer lex{};

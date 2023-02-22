@@ -26,6 +26,10 @@ struct level:base{
     IT start;
 };
 
+struct between:base{
+    std::string evaluate(IT it, IT last) override;
+};
+
 struct expressions:base{
     std::string evaluate(IT it, IT last) override;
 };

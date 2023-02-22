@@ -22,16 +22,47 @@ std::string match::evaluate(IT it, IT last) {
     for(; it < last; it++){
         std::string s = children[0]->evaluate(it, last);
         if(!s.empty()){
-            auto lvl = dynamic_cast<level*>(children[0]);
-            while(it != lvl->start){
-                std::cout << *it;
-                it++;
-            }
+            IT start = dynamic_cast<level*>(children[0])->start;
+            for(;it != start; it++){ std::cout << *it; }
+
             std::cout << "\x1B[32m" + s + "\033[0m";
             it = it + (int)s.size() - 1;
             continue;
         }
         std::cout << *it;
+    }
+    return {};
+}
+
+void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
+    if(dynamic_cast<subexpression*>(children[0])){
+        levels.push_back(children[0]->children);
+        traverse_tree(children[0]->children, levels);
+    }else if(!dynamic_cast<string*>(children[0])){
+        traverse_tree(children[0]->children, levels);
+    }
+    if(children.size() > 1){
+        traverse_tree(children[1]->children, levels);
+    }
+}
+
+std::string level::evaluate(IT it, IT last) {
+    if(!children[0]->evaluate(it, last).empty()) {
+        std::vector<std::vector<base*>> nodes;
+        nodes.push_back(children);
+        traverse_tree(children, nodes);
+        if(nodes.size() - 1 < *digit - '0'){
+            throw std::invalid_argument("Couldn't resolve levels");
+        }
+        for(int i = 0; i < *digit - '0' + 1; i++) {
+            for (; it != last; it++) {
+                if (!nodes[i][0]->evaluate(it, last).empty()) {
+                    break;
+                }
+            }
+        }
+        start = it;
+        return nodes[*digit - '0'][0]->evaluate(it, last);
     }
     return {};
 }
@@ -103,16 +134,6 @@ std::string many::evaluate(IT it, IT last) {
     if(ignore){ children[0]->ignore = true; }
     if(it < last) {
         if (!children[0]->evaluate(it, last).empty()) {
-            /*std::vector<base*> l;
-            find_last(children[0]->children, l);
-            std::string eval = children[0]->evaluate(it, last);
-            it = it + children[0]->evaluate(it, last).size();
-            while(!l[0]->evaluate(it, last).empty()){
-                eval += l[0]->evaluate(it, last);
-                it++;
-            }
-            return eval;*/
-
             if (!children[0]->evaluate(it + (int)children[0]->evaluate(it, last).size(), last).empty()) {
                 return children[0]->evaluate(it, last) + evaluate(it + (int)children[0]->evaluate(it, last).size(), last);
             }
@@ -158,39 +179,6 @@ std::string count::evaluate(IT it, IT last) {
     return eval;
 }
 
-void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
-    if(dynamic_cast<subexpression*>(children[0])){
-        levels.push_back(children[0]->children);
-        traverse_tree(children[0]->children, levels);
-    }else if(!dynamic_cast<string*>(children[0])){
-        traverse_tree(children[0]->children, levels);
-    }
-    if(children.size() > 1){
-        traverse_tree(children[1]->children, levels);
-    }
-}
-
-std::string level::evaluate(IT it, IT last) {
-    if(!children[0]->evaluate(it, last).empty()) {
-        std::vector<std::vector<base*>> nodes;
-        nodes.push_back(children);
-        traverse_tree(children, nodes);
-        if(nodes.size() - 1 < *digit - '0'){
-            throw std::invalid_argument("Couldn't resolve levels");
-        }
-        for(int i = 0; i < *digit - '0' + 1; i++) {
-            for (; it != last; it++) {
-                if (!nodes[i][0]->evaluate(it, last).empty()) {
-                    break;
-                }
-            }
-        }
-        start = it;
-        return nodes[*digit - '0'][0]->evaluate(it, last);
-    }
-    return {};
-}
-
 std::string ignore::evaluate(IT it, IT last) {
     for(auto child : children){
         child->ignore = true;
@@ -205,4 +193,8 @@ std::string operand::evaluate(IT it, IT last) {
         return child->evaluate(it, last);
     }
     return {};
+}
+
+std::string between::evaluate(IT it, IT last) {
+    return std::__cxx11::string();
 }
