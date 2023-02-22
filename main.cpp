@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
 
         parser parse = parser(program.begin(), program.end());
 
-        runner run = runner(parse.get_match(), input);
+        generator run = generator(parse.get_match(), input);
         run.get_result();
     }
     return 0;
