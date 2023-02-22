@@ -35,9 +35,17 @@ lexer::token lexer::lookup(std::string::iterator it, std::string::iterator last)
         return DIGIT;
     }
     throw std::invalid_argument("Unknown lexeme");
-    return UNKNOWN;
 }
 
 void lexer::set_current_token(std::string::iterator it, std::string::iterator last) {
     set_current_token(lookup(it, last));
+}
+
+lexer::token lexer::get_current(std::string::iterator it, std::string::iterator last) {
+    set_current_token(lookup(it, last));
+    return get_current_token();
+}
+
+lexer::token lexer::get_next(std::string::iterator it, std::string::iterator last) {
+    return lookup(std::next(it), last);;
 }

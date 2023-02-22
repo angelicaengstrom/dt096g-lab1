@@ -7,21 +7,22 @@
 #include <iostream>
 #include <vector>
 #include "lexer.h"
-#include "runner.h"
+#include "generator.h"
 
 class parser {
     match* parse_match();
     level* parse_level();
-    ignore* parse_ignore();
     expressions* parse_expressions();
     expression* parse_expression();
     subexpression* parse_subexpression();
-    either* parse_either();
-    many* parse_many();
-    count* parse_count();
+    either* parse_either(operand* op);
+    many* parse_many(operand* op);
+    count* parse_count(operand* op);
+    operand* parse_operand();
+    ignore* parse_ignore();
     string* parse_string();
-    match* matcher;
-    lexer lex;
+    match* matcher{};
+    lexer lex{};
     std::string::iterator it;
     std::string::iterator last;
 public:
