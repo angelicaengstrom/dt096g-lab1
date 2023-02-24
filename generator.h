@@ -11,65 +11,64 @@
 using IT = std::string::iterator;
 
 struct base{
-    virtual bool evaluate(IT it, IT last) = 0;
+    virtual bool evaluate(IT &it, IT &last) = 0;
     std::vector<base*> children;
     bool ignore = false;
 };
 
 struct match:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct level:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
     IT digit;
-    IT start;
 };
 
 struct expressions:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct subexpression:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct expression:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct ignore:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct either:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct count:base{
-    bool evaluate(IT it, IT last) override;
-    std::string::iterator digit;
+    bool evaluate(IT &it, IT &last) override;
+    IT digit;
 };
 
 struct many:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct operand:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct string:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 struct letter:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
     IT letter;
 };
 
 struct wildcard:base{
-    bool evaluate(IT it, IT last) override;
+    bool evaluate(IT &it, IT &last) override;
 };
 
 class generator {

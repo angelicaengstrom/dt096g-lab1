@@ -8,25 +8,23 @@ generator::generator(match *m, std::string input): matcher(m), input(std::move(i
 
 void generator::get_result() {
     if(matcher != nullptr){
-        matcher->evaluate(input.begin(), input.end());
+        IT begin = input.begin();
+        IT end = input.end();
+        std::cout << matcher->evaluate(begin, end);
         return;
     }
     throw std::invalid_argument("Couldn't resolve match");
 }
 
 //<match> := <level>
-bool match::evaluate(IT it, IT last) {
+bool match::evaluate(IT &it, IT &last) {
     for(; it < last; it++){
         if(children[0]->evaluate(it, last)){
-            //IT start = dynamic_cast<level*>(children[0])->start;
-            //for(;it != start; it++){ std::cout << *it; }
-            std::cout << "\x1B[32m" << *it << "\033[0m";
-
-            continue;
+            return true;
+            //std::cout << "\x1B[32m" << *it << "\033[0m";
         }
-        std::cout << *it;
     }
-    return {};
+    return false;
 }
 
 void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
@@ -42,7 +40,7 @@ void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<b
 }
 
 //<level> := <expressions>\O{<digit>}
-bool level::evaluate(IT it, IT last) {
+bool level::evaluate(IT &it, IT &last) {
     if(children[0]->evaluate(it, last)) {
         std::vector<std::vector<base*>> nodes;
         nodes.push_back(children);
@@ -58,14 +56,13 @@ bool level::evaluate(IT it, IT last) {
                 }
             }
         }
-        start = it;
         return nodes[index][0]->evaluate(it, last);
     }
-    return {};
+    return false;
 }
 
 //<expressions> := <expression> | <expression><expressions>
-bool expressions::evaluate(IT it, IT last) {
+bool expressions::evaluate(IT &it, IT &last) {
     if(dynamic_cast<expression*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
         if(children.size() > 1){
@@ -77,7 +74,7 @@ bool expressions::evaluate(IT it, IT last) {
 }
 
 //<subexpression> := (<expressions>)
-bool subexpression::evaluate(IT it, IT last) {
+bool subexpression::evaluate(IT &it, IT &last) {
     if(dynamic_cast<expressions*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
         return children[0]->evaluate(it, last);
@@ -86,7 +83,7 @@ bool subexpression::evaluate(IT it, IT last) {
 }
 
 //<ignore> := <operand>\I
-bool ignore::evaluate(IT it, IT last) {
+bool ignore::evaluate(IT &it, IT &last) {
     for(auto child : children){
         child->ignore = true;
         return child->evaluate(it, last);
@@ -95,7 +92,7 @@ bool ignore::evaluate(IT it, IT last) {
 }
 
 //<expression> := <operand> | <either> | <many> | <count>
-bool expression::evaluate(IT it, IT last) {
+bool expression::evaluate(IT &it, IT &last) {
     for(auto child : children){
         if(ignore){ child->ignore = true; }
         return child->evaluate(it, last);
@@ -104,7 +101,7 @@ bool expression::evaluate(IT it, IT last) {
 }
 
 //<either> := <operand>+<operand> | <operand>+<either>
-bool either::evaluate(IT it, IT last){
+bool either::evaluate(IT &it, IT &last){
     for(auto child : children){
         if(ignore){ child->ignore = true; }
         if(child->evaluate(it, last)){
@@ -115,21 +112,19 @@ bool either::evaluate(IT it, IT last){
 }
 
 //<many> := <operand>*
-bool many::evaluate(IT it, IT last) {
+bool many::evaluate(IT &it, IT &last) {
     if(ignore){ children[0]->ignore = true; }
     if(it < last) {
-        if (children[0]->evaluate(it, last)) {
-            if (children[0]->evaluate(it + 1, last)) {
-                return evaluate(it + 1, last);
-            }
-            return children[0]->evaluate(it + 1, last);
+        if (children[0]->evaluate(++it, last)) {
+            return evaluate(it, last);
         }
+        return children[0]->evaluate(it, last);
     }
-    return {};
+    return false;
 }
 
 //<count> := <operand>{<digit>}
-bool count::evaluate(IT it, IT last) {
+bool count::evaluate(IT &it, IT &last) {
     for(int i = 0; i < *digit - '0'; i++){
         if (!children[0]->evaluate(it + i * 1, last)) {
             return false;
@@ -139,7 +134,7 @@ bool count::evaluate(IT it, IT last) {
 }
 
 //<operand> := <string> | <subexpression>
-bool operand::evaluate(IT it, IT last) {
+bool operand::evaluate(IT &it, IT &last) {
     if(dynamic_cast<string*>(children[0]) || dynamic_cast<subexpression*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
         return children[0]->evaluate(it, last);
@@ -148,7 +143,7 @@ bool operand::evaluate(IT it, IT last) {
 }
 
 //<string> := <letter> | <wildcard> | <letter><string> | <wildcard><string>
-bool string::evaluate(IT it, IT last) {
+bool string::evaluate(IT &it, IT &last) {
     if(dynamic_cast<wildcard*>(children[0]) || dynamic_cast<letter*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
         if (children.size() > 1) {
@@ -166,13 +161,13 @@ bool string::evaluate(IT it, IT last) {
     throw std::runtime_error("Couldn't evaluate string");
 }
 
-bool letter::evaluate(IT it, IT last) {
+bool letter::evaluate(IT &it, IT &last) {
     if(ignore){
         return *it == std::tolower(*letter) || *it == std::toupper(*letter);
     }
     return *it == *letter;
 }
 
-bool wildcard::evaluate(IT it, IT last) {
+bool wildcard::evaluate(IT &it, IT &last) {
     return true;
 }

@@ -8,7 +8,9 @@ int main(int argc, char *argv[]) {
         std::string input;
         std::getline(std::cin, input);
 
-        parser parse = parser(program.begin(), program.end());
+        IT begin = program.begin();
+        IT end = program.end();
+        parser parse = parser(begin, end);
 
         generator generate = generator(parse.get_match(), input);
         generate.get_result();
