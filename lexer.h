@@ -22,6 +22,9 @@ public:
 
     void set_current_token(std::string::iterator it, std::string::iterator last);
 
+    token get_current(std::string::iterator it, std::string::iterator last);
+
+    token get_next(std::string::iterator it, std::string::iterator last);
 private:
     token lookup(std::string::iterator it, std::string::iterator last);
     token current_token;
