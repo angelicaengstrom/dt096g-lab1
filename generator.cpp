@@ -49,6 +49,7 @@ bool level::evaluate(IT &it, IT &last) {
         int index = *digit - '0';
         if(nodes.size() - 1 < index){ throw std::invalid_argument("Couldn't resolve levels"); }
 
+        //Ansvara för att backa tillbaka till normaltillstånd ifall fail
         for(int i = 0; i < index + 1; i++) {
             for (; it != last; it++) {
                 if (nodes[i][0]->evaluate(it, last)) {
@@ -126,7 +127,7 @@ bool many::evaluate(IT &it, IT &last) {
 //<count> := <operand>{<digit>}
 bool count::evaluate(IT &it, IT &last) {
     for(int i = 0; i < *digit - '0'; i++){
-        if (!children[0]->evaluate(it + i * 1, last)) {
+        if (!children[0]->evaluate(++it, last)) {
             return false;
         }
     }
@@ -150,10 +151,10 @@ bool string::evaluate(IT &it, IT &last) {
             if(dynamic_cast<string*>(children[1])) {
                 if(ignore){ children[1]->ignore = true; }
 
-                if (!children[0]->evaluate(it, last) || !children[1]->evaluate(it + 1, it + 2)) {
+                if (!children[0]->evaluate(it, last) || !children[1]->evaluate(++it, last)) {
                     return false;
                 }
-                return children[1]->evaluate(it + 1, it + 2);
+                return children[1]->evaluate(it, last);
             }
         }
         return children[0]->evaluate(it, last);
