@@ -188,7 +188,7 @@ std::string letter::evaluate(IT it, IT last) {
         if(*it == std::tolower(*letter) || *it == std::toupper(*letter)){
             return std::string{ *it };
         }
-    }else {
+    }else{
         if (*it == *letter) {
             return std::string{ *it };
         }
