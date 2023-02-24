@@ -3,4 +3,4 @@ project(lab1)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(lab1 main.cpp lexer.cpp lexer.h generator.cpp generator.h)
+add_executable(lab1 main.cpp lexer.cpp lexer.h parser.cpp parser.h generator.cpp generator.h)
