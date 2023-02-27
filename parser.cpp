@@ -4,7 +4,7 @@
 
 #include "parser.h"
 
-parser::parser(IT first, IT last):it(first), last(last) {
+parser::parser(IT& first, IT& last):it(first), last(last) {
     //matcher = parse_match();
     set_match(parse_match());
 }
@@ -56,19 +56,36 @@ level *parser::parse_level() {
     return lvl;
 }
 
-//<expressions> := <expression> | <expression><expressions>
+//<expressions> := <expression> | <expression><expressions> | <greedy>
 expressions *parser::parse_expressions() {
     auto id_expression = parse_expression();
     if(!id_expression){
         return nullptr;
     }
     auto result = new expressions();
+    auto id_greedy = parse_greedy(id_expression);
+    if(id_greedy){
+        result->children.push_back(id_greedy);
+        return result;
+    }
     result->children.push_back(id_expression);
 
     auto new_expression = parse_expressions();
     if(new_expression){
         result->children.push_back(new_expression);
     }
+    return result;
+}
+
+//<greedy> := <expression><expressions>
+greedy *parser::parse_greedy(expression* exp) {
+    auto id_expressions = parse_expressions();
+    if(!id_expressions){
+        return nullptr;
+    }
+    auto result = new greedy();
+    result->children.push_back(exp);
+    result->children.push_back(id_expressions);
     return result;
 }
 
@@ -87,16 +104,6 @@ subexpression *parser::parse_subexpression() {
             return sub;
         }
         throw std::invalid_argument("Couldn't resolve subexpression");
-    }
-    return nullptr;
-}
-
-//<ignore> := <operand>\I
-ignore *parser::parse_ignore() {
-    if(lex.get_current(it, last) == lexer::IGNORE_OP){
-        it = it + 2;
-        auto i = new ignore();
-        return i;
     }
     return nullptr;
 }
@@ -180,27 +187,49 @@ count *parser::parse_count(operand* op) {
     return nullptr;
 }
 
-//<operand> := <string> | <subexpression>
+//<ignore> := <subexpression>\I | <string>\I
+ignore *parser::parse_ignore(string* s) {
+    if(lex.get_current(it, last) == lexer::IGNORE_OP){
+        it = it + 2;
+        auto i = new ignore();
+        i->children.push_back(s);
+        return i;
+    }
+    return nullptr;
+}
+//<ignore> := <subexpression>\I | <string>\I
+ignore *parser::parse_ignore(subexpression* sub) {
+    if(lex.get_current(it, last) == lexer::IGNORE_OP){
+        it = it + 2;
+        auto i = new ignore();
+        i->children.push_back(sub);
+        return i;
+    }
+    return nullptr;
+}
+
+//<operand> := <ignore> | <subexpression> | <string>
 operand *parser::parse_operand() {
     auto id_string = parse_string();
     if(id_string){
         auto op = new operand();
-        op->children.push_back(id_string);
-
-        auto id_ignore = parse_ignore();
+        auto id_ignore = parse_ignore(id_string);
         if(id_ignore){
-            op->ignore = true;
+            op->children.push_back(id_ignore);
+            return op;
         }
-        return op;    }
+        op->children.push_back(id_string);
+        return op;
+    }
     auto id_subexpression = parse_subexpression();
     if(id_subexpression){
         auto op = new operand();
-        op->children.push_back(id_subexpression);
-
-        auto id_ignore = parse_ignore();
+        auto id_ignore = parse_ignore(id_subexpression);
         if(id_ignore){
-            op->ignore = true;
+            op->children.push_back(id_ignore);
+            return op;
         }
+        op->children.push_back(id_subexpression);
         return op;
     }
     return nullptr;

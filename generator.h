@@ -5,6 +5,7 @@
 #ifndef LAB1_GENERATOR_H
 #define LAB1_GENERATOR_H
 
+#include <utility>
 #include <vector>
 #include <string>
 
@@ -26,6 +27,10 @@ struct level:base{
 };
 
 struct expressions:base{
+    bool evaluate(IT &it, IT &last) override;
+};
+
+struct greedy:base{
     bool evaluate(IT &it, IT &last) override;
 };
 
@@ -71,13 +76,37 @@ struct wildcard:base{
     bool evaluate(IT &it, IT &last) override;
 };
 
+class text{
+    std::string escape_code = "\x1b[44m";
+    std::string txt;
+    std::string end = "\033[0m";
+public:
+    void set_text(IT t){
+        txt = *t;
+    }
+
+    [[nodiscard]] std::string get_text() const{
+        return escape_code + txt + end;
+    }
+
+    std::string get_text(){
+        return escape_code + txt + end;
+    }
+
+    void update(){
+        if(escape_code == "\x1b[44m"){ escape_code = "\x1b[45m"; }else{ escape_code = "\x1b[44m"; }
+    }
+};
+
 class generator {
 private:
     match *matcher;
     std::string input;
+    text t;
 public:
     generator(match *m, std::string  input);
     void get_result();
+    friend std::ostream& operator<<(std::ostream& out, const text& t);
 };
 
 #endif //LAB1_GENERATOR_H
