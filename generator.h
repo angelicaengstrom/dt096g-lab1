@@ -99,7 +99,6 @@ public:
 };
 
 class generator {
-private:
     match *matcher;
     std::string input;
     text t;

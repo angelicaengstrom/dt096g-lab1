@@ -37,7 +37,7 @@ level *parser::parse_level() {
     auto lvl = new level();
     lvl->children.push_back(id_expressions);
     if(lex.get_current(it, last) == lexer::LEVEL_OP){
-        it = it + 2;
+        //it = it + 2;
         if(lex.get_current(it, last) == lexer::LBRACKET){
             it++;
             if(lex.get_current(it, last) == lexer::DIGIT){
@@ -193,7 +193,7 @@ count *parser::parse_count(operand* op) {
 //<ignore> := <subexpression>\I | <string>\I
 ignore *parser::parse_ignore(string* s) {
     if(lex.get_current(it, last) == lexer::IGNORE_OP){
-        it = it + 2;
+        //it = it + 2;
         auto i = new ignore();
         i->children.push_back(s);
         return i;
@@ -203,7 +203,7 @@ ignore *parser::parse_ignore(string* s) {
 //<ignore> := <subexpression>\I | <string>\I
 ignore *parser::parse_ignore(subexpression* sub) {
     if(lex.get_current(it, last) == lexer::IGNORE_OP){
-        it = it + 2;
+        //it = it + 2;
         auto i = new ignore();
         i->children.push_back(sub);
         return i;

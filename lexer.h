@@ -6,6 +6,8 @@
 #define LAB1_LEXER_H
 #include <iostream>
 
+using IT = std::string::iterator;
+
 class lexer {
 public:
     enum token{
@@ -20,13 +22,13 @@ public:
 
     void set_current_token(token token);
 
-    void set_current_token(std::string::iterator it, std::string::iterator last);
+    void set_current_token(IT& it, IT& last);
 
-    token get_current(std::string::iterator it, std::string::iterator last);
+    token get_current(IT& it, IT& last);
 
-    token get_next(std::string::iterator it, std::string::iterator last);
+    token get_next(IT& it, IT& last);
 private:
-    token lookup(std::string::iterator it, std::string::iterator last);
+    token lookup(IT& it, IT& last);
     token current_token;
 };
 

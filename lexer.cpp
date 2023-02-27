@@ -12,7 +12,7 @@ void lexer::set_current_token(lexer::token token) {
     lexer::current_token = token;
 }
 
-lexer::token lexer::lookup(std::string::iterator it, std::string::iterator last) {
+lexer::token lexer::lookup(IT& it, IT& last) {
     if(it == last){ return END; }
     switch(*it){
         case '(': return LPAREN;
@@ -24,8 +24,12 @@ lexer::token lexer::lookup(std::string::iterator it, std::string::iterator last)
         case '*': return MANY_OP;
         case '\\':
             it++;
-            if(*it == 'O'){ return LEVEL_OP; }
-            if(*it == 'I'){ return IGNORE_OP; }
+            if(*it == 'O'){
+                it++;
+                return LEVEL_OP; }
+            if(*it == 'I'){
+                it++;
+                return IGNORE_OP; }
             break;
     }
     if((*it >= 'A' && *it <= 'Z') || (*it >= 'a' && *it <= 'z') || std::isspace(*it)){
@@ -37,15 +41,15 @@ lexer::token lexer::lookup(std::string::iterator it, std::string::iterator last)
     throw std::invalid_argument("Unknown lexeme");
 }
 
-void lexer::set_current_token(std::string::iterator it, std::string::iterator last) {
+void lexer::set_current_token(IT& it, IT& last) {
     set_current_token(lookup(it, last));
 }
 
-lexer::token lexer::get_current(std::string::iterator it, std::string::iterator last) {
+lexer::token lexer::get_current(IT& it, IT& last) {
     set_current_token(lookup(it, last));
     return get_current_token();
 }
 
-lexer::token lexer::get_next(std::string::iterator it, std::string::iterator last) {
-    return lookup(std::next(it), last);;
+lexer::token lexer::get_next(IT& it, IT& last) {
+    return lookup(++it, last);;
 }
