@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
     if(argc > 1){
-        static std::string program = argv[1];
+        std::string program = argv[1];
         std::string input;
         std::getline(std::cin, input);
 
