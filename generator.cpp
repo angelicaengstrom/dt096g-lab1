@@ -10,7 +10,16 @@ void generator::get_result() {
     if(matcher != nullptr){
         IT begin = input.begin();
         IT end = input.end();
-        std::cout << matcher->evaluate(begin, end);
+        for(IT it = begin; it < end; it++, begin++) {
+            if(matcher->evaluate(it, end)){
+                for(; begin != it; begin++){
+                    std::cout << "\x1b[44m" << *begin << "\033[0m";
+                }
+                std::cout << "\x1b[44m" << *it << "\033[0m";
+                continue;
+            }
+            std::cout << *begin;
+        }
         return;
     }
     throw std::invalid_argument("Couldn't resolve match");
@@ -18,13 +27,7 @@ void generator::get_result() {
 
 //<match> := <level>
 bool match::evaluate(IT &it, IT &last) {
-    for(; it < last; it++){
-        if(children[0]->evaluate(it, last)){
-            return true;
-            //std::cout << "\x1B[32m" << *it << "\033[0m";
-        }
-    }
-    return false;
+    return children[0]->evaluate(it, last);
 }
 
 void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
@@ -41,35 +44,35 @@ void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<b
 
 //<level> := <expressions>\O{<digit>}
 bool level::evaluate(IT &it, IT &last) {
-    if(children[0]->evaluate(it, last)) {
-        std::vector<std::vector<base*>> nodes;
-        nodes.push_back(children);
-        traverse_tree(children, nodes);
+    IT start = it;
 
-        int index = *digit - '0';
-        if(nodes.size() - 1 < index){ throw std::invalid_argument("Couldn't resolve levels"); }
+    std::vector<std::vector<base*>> nodes;
+    nodes.push_back(children);
+    traverse_tree(children, nodes);
 
-        //Ansvara för att backa tillbaka till normaltillstånd ifall fail
-        for(int i = 0; i < index + 1; i++) {
-            for (; it != last; it++) {
-                if (nodes[i][0]->evaluate(it, last)) {
-                    break;
-                }
-            }
-        }
-        return nodes[index][0]->evaluate(it, last);
+    int index = *digit - '0';
+    if(nodes.size() - 1 < index){ throw std::invalid_argument("Couldn't resolve levels"); }
+
+    if(!nodes[index][0]->evaluate(it, last)){
+        it = start;
+        return false;
     }
-    return false;
+    return true;
 }
 
 //<expressions> := <expression> | <expression><expressions>
 bool expressions::evaluate(IT &it, IT &last) {
     if(dynamic_cast<expression*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
-        if(children.size() > 1){
-            return children[1]->evaluate(it, last);
+        if(children[0]->evaluate(it, last)) {
+            if (children.size() > 1) {
+                if (!children[1]->evaluate(++it, last)) {
+                    return false;
+                }
+            }
+            return true;
         }
-        return children[0]->evaluate(it, last);
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate expressions");
 }
@@ -103,10 +106,12 @@ bool expression::evaluate(IT &it, IT &last) {
 
 //<either> := <operand>+<operand> | <operand>+<either>
 bool either::evaluate(IT &it, IT &last){
+    IT start = it;
     for(auto child : children){
         if(ignore){ child->ignore = true; }
-        if(child->evaluate(it, last)){
-            return child->evaluate(it, last);
+        if(child->evaluate(start, last)){
+            it = start;
+            return true;
         }
     }
     return false;
@@ -116,18 +121,21 @@ bool either::evaluate(IT &it, IT &last){
 bool many::evaluate(IT &it, IT &last) {
     if(ignore){ children[0]->ignore = true; }
     if(it < last) {
-        if (children[0]->evaluate(++it, last)) {
-            return evaluate(it, last);
+        if (children[0]->evaluate(it, last)) {
+            IT stop = it;
+            if(!evaluate(++it, last)){
+                it = stop;
+            }
+            return true;
         }
-        return children[0]->evaluate(it, last);
     }
     return false;
 }
 
 //<count> := <operand>{<digit>}
-bool count::evaluate(IT &it, IT &last) {
-    for(int i = 0; i < *digit - '0'; i++){
-        if (!children[0]->evaluate(++it, last)) {
+bool count::evaluate(IT &it, IT &last){
+    for(int i = 0; i < *digit - '0'; i++, it++){
+        if (!children[0]->evaluate(it, last)) {
             return false;
         }
     }
@@ -147,17 +155,19 @@ bool operand::evaluate(IT &it, IT &last) {
 bool string::evaluate(IT &it, IT &last) {
     if(dynamic_cast<wildcard*>(children[0]) || dynamic_cast<letter*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
-        if (children.size() > 1) {
-            if(dynamic_cast<string*>(children[1])) {
-                if(ignore){ children[1]->ignore = true; }
+        if(children[0]->evaluate(it, last)) {
+            if (children.size() > 1) {
+                if (dynamic_cast<string *>(children[1])) {
+                    if (ignore) { children[1]->ignore = true; }
 
-                if (!children[0]->evaluate(it, last) || !children[1]->evaluate(++it, last)) {
-                    return false;
+                    if (!children[1]->evaluate(++it, last)) {
+                        return false;
+                    }
                 }
-                return children[1]->evaluate(it, last);
             }
+            return true;
         }
-        return children[0]->evaluate(it, last);
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate string");
 }
