@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <iostream>
 
+IT sub_start;
+IT sub_stop;
+int curr = 0;
+int lvl = 0;
+
 generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
 
 std::ostream& operator<<(std::ostream& out, const text& t){
@@ -17,12 +22,23 @@ void generator::get_result() {
         IT end = input.end();
         for(IT it = begin; it < end; it++, begin++) {
             if(matcher->evaluate(it, end)){
-                for(; begin != it; begin++){
-                    t.set_text(begin);
-                    std::cout << t;
+                if(lvl > 0) {
+                    for (; begin < sub_start; begin++) {
+                        std::cout << *begin;
+                    }
+                    for (; sub_start != sub_stop; sub_start++, begin++) {
+                        t.set_text(sub_start);
+                        std::cout << t;
+                    }
+                    for (; begin < std::next(it); begin++) {
+                        std::cout << *begin;
+                    }
+                }else{
+                    for (; begin != std::next(it); begin++) {
+                        t.set_text(begin);
+                        std::cout << t;
+                    }
                 }
-                t.set_text(it);
-                std::cout << t;
                 t.update();
                 continue;
             }
@@ -52,23 +68,9 @@ void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<b
 
 //<level> := <expressions>\O{<digit>}
 bool level::evaluate(IT &it, IT &last) {
+    lvl = *digit - '0';
     IT start = it;
-
     if(children[0]->evaluate(it, last)){
-        if(*digit - '0' == 0){ return true; }
-        it = start;
-        std::vector<std::vector<base *>> nodes;
-        traverse_tree(children, nodes);
-        if (nodes.size() - 1 < *digit - '0' - 1) { throw std::invalid_argument("Couldn't resolve levels"); }
-
-        for(int i = 0; i < *digit - '0'; i++) {
-            for (IT temp = it; temp != last; temp++, it++) {
-                if (nodes[*digit - '0' - 1][0]->evaluate(temp, last)) {
-                    start = it;
-                    break;
-                }
-            }
-        }
         return true;
     }
     it = start;
@@ -97,10 +99,13 @@ bool greedy::evaluate(IT &it, IT &last) {
     if(children[0]->evaluate(it, last)){
         if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
 
-        for(; start != it; it--){
-            if(children[1]->evaluate(it, last)){
+        for(IT temp = it; start != it; it--){
+            if(children[1]->evaluate(temp, last)){
+                if(lvl == curr){ sub_stop = std::next(it); }
+                it = temp;
                 return true;
             }
+            temp = it;
         }
     }
     return false;
@@ -108,14 +113,24 @@ bool greedy::evaluate(IT &it, IT &last) {
 
 //<subexpression> := (<expressions>)
 bool subexpression::evaluate(IT &it, IT &last) {
+    curr++;
+    if(lvl == curr){
+        sub_start = it;
+    }
     if(dynamic_cast<expressions*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
-        return children[0]->evaluate(it, last);
+        if(children[0]->evaluate(it, last)) {
+            if (lvl == curr) {
+                sub_stop = std::next(it);
+            }
+            return true;
+        }
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate subexpression");
 }
 
-//<ignore> := <operand>\I
+//<ignore> := <subexpression>\I | <string>\I
 bool ignore::evaluate(IT &it, IT &last) {
     for(auto child : children){
         child->ignore = true;

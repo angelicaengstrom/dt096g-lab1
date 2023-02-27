@@ -77,8 +77,11 @@ expressions *parser::parse_expressions() {
     return result;
 }
 
-//<greedy> := <expression><expressions>
+//<greedy> := <subexpression><expressions> | <many><expressions>
 greedy *parser::parse_greedy(expression* exp) {
+    if(!dynamic_cast<many*>(exp->children[0]) && !dynamic_cast<subexpression*>(exp->children[0]->children[0])){
+        return nullptr;
+    }
     auto id_expressions = parse_expressions();
     if(!id_expressions){
         return nullptr;
