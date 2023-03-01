@@ -15,6 +15,26 @@ std::ostream& operator<<(std::ostream& out, const text& t){
     out << t.get_text();
     return out;
 }
+/* WARNING: the code that follows will make you cry:
+ *          a safety pig is provided below for your benefit
+ *
+ *
+ *
+ *                          _
+ _._ _..._ .-',     _.._(`))
+'-. `     '  /-._.-'    ',/
+   )         \            '.
+  / _    _    |             \
+ |  a    a    /              |
+ \   .-.                     ;
+  '-('' ).-'       ,'       ;
+     '-;           |      .'
+        \           \    /
+        | 7  .__  _.-\   \
+        | |  |  ``/  /`  /
+       /,_|  |   /,_/   /
+          /,_/      '`-'
+ * */
 
 void generator::get_result() {
     if(matcher != nullptr){
