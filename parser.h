@@ -13,7 +13,7 @@ class parser {
     match* parse_match();
     level* parse_level();
     expressions* parse_expressions();
-    greedy* parse_greedy(expression* exp);
+    greedy* parse_greedy(many* exp);
     expression* parse_expression();
     subexpression* parse_subexpression();
     either* parse_either(operand* op);
@@ -28,7 +28,7 @@ class parser {
     IT it;
     IT last;
 public:
-    parser(IT& first, IT& last);
+    parser(IT first, IT last);
     [[nodiscard]] match *get_match() const;
     void set_match(match *matcher);
 };

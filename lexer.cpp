@@ -12,7 +12,7 @@ void lexer::set_current_token(lexer::token token) {
     lexer::current_token = token;
 }
 
-lexer::token lexer::lookup(IT& it, IT& last) {
+lexer::token lexer::lookup(IT it, IT last) {
     if(it == last){ return END; }
     switch(*it){
         case '(': return LPAREN;

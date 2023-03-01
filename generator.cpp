@@ -4,17 +4,6 @@
 #include <algorithm>
 #include <iostream>
 
-IT sub_start;
-IT sub_stop;
-int curr = 0;
-int lvl = 0;
-
-generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
-
-std::ostream& operator<<(std::ostream& out, const text& t){
-    out << t.get_text();
-    return out;
-}
 /* WARNING: the code that follows will make you cry:
  *          a safety pig is provided below for your benefit
  *
@@ -34,13 +23,26 @@ std::ostream& operator<<(std::ostream& out, const text& t){
         | |  |  ``/  /`  /
        /,_|  |   /,_/   /
           /,_/      '`-'
- * */
+ */
+IT sub_start;
+IT sub_stop;
+int curr;
+int lvl;
+
+generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
+
+std::ostream& operator<<(std::ostream& out, const text& t){
+    out << t.get_text();
+    return out;
+}
 
 void generator::get_result() {
+    lvl = 0;
     if(matcher != nullptr){
         IT begin = input.begin();
         IT end = input.end();
         for(IT it = begin; it < end; it++, begin++) {
+            curr = 0;
             if(matcher->evaluate(it, end)){
                 if(lvl > 0) {
                     for (; begin < sub_start; begin++) {
@@ -50,16 +52,18 @@ void generator::get_result() {
                         t.set_text(sub_start);
                         std::cout << t;
                     }
-                    for (; begin < std::next(it); begin++) {
+                    for (; begin != it; begin++) {
                         std::cout << *begin;
                     }
                 }else{
-                    for (; begin != std::next(it); begin++) {
+                    for (; begin != it; begin++) {
                         t.set_text(begin);
                         std::cout << t;
                     }
+                    t.set_text(it);
+                    std::cout << t;
+                    t.update();
                 }
-                t.update();
                 continue;
             }
             std::cout << *it;
@@ -121,7 +125,6 @@ bool greedy::evaluate(IT &it, IT &last) {
 
         for(IT temp = it; start != it; it--){
             if(children[1]->evaluate(temp, last)){
-                if(lvl == curr){ sub_stop = std::next(it); }
                 it = temp;
                 return true;
             }

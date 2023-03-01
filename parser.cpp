@@ -4,7 +4,7 @@
 
 #include "parser.h"
 
-parser::parser(IT& first, IT& last):it(first), last(last) {
+parser::parser(IT first, IT last):it(first), last(last) {
     //matcher = parse_match();
     set_match(parse_match());
 }
@@ -37,7 +37,7 @@ level *parser::parse_level() {
     auto lvl = new level();
     lvl->children.push_back(id_expressions);
     if(lex.get_current(it, last) == lexer::LEVEL_OP){
-        //it = it + 2;
+        it = it + 2;
         if(lex.get_current(it, last) == lexer::LBRACKET){
             it++;
             if(lex.get_current(it, last) == lexer::DIGIT){
@@ -63,10 +63,13 @@ expressions *parser::parse_expressions() {
         return nullptr;
     }
     auto result = new expressions();
-    auto id_greedy = parse_greedy(id_expression);
-    if(id_greedy){
-        result->children.push_back(id_greedy);
-        return result;
+    auto m = dynamic_cast<many*>(id_expression->children[0]);
+    if(m) {
+        auto id_greedy = parse_greedy(m);
+        if (id_greedy) {
+            result->children.push_back(id_greedy);
+            return result;
+        }
     }
     result->children.push_back(id_expression);
 
@@ -77,17 +80,14 @@ expressions *parser::parse_expressions() {
     return result;
 }
 
-//<greedy> := <subexpression><expressions> | <many><expressions>
-greedy *parser::parse_greedy(expression* exp) {
-    if(!dynamic_cast<many*>(exp->children[0]) && !dynamic_cast<subexpression*>(exp->children[0]->children[0])){
-        return nullptr;
-    }
+//<greedy> := <many><expressions>
+greedy *parser::parse_greedy(many* m) {
     auto id_expressions = parse_expressions();
     if(!id_expressions){
         return nullptr;
     }
     auto result = new greedy();
-    result->children.push_back(exp);
+    result->children.push_back(m);
     result->children.push_back(id_expressions);
     return result;
 }
@@ -193,7 +193,7 @@ count *parser::parse_count(operand* op) {
 //<ignore> := <subexpression>\I | <string>\I
 ignore *parser::parse_ignore(string* s) {
     if(lex.get_current(it, last) == lexer::IGNORE_OP){
-        //it = it + 2;
+        it = it + 2;
         auto i = new ignore();
         i->children.push_back(s);
         return i;

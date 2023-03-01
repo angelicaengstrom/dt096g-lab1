@@ -28,7 +28,7 @@ public:
 
     token get_next(IT& it, IT& last);
 private:
-    token lookup(IT& it, IT& last);
+    token lookup(IT it, IT last);
     token current_token;
 };
 
