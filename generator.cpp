@@ -55,6 +55,8 @@ void generator::get_result() {
                     for (; begin != it; begin++) {
                         std::cout << *begin;
                     }
+                    std::cout << *it;
+                    t.update();
                 }else{
                     for (; begin != it; begin++) {
                         t.set_text(begin);
