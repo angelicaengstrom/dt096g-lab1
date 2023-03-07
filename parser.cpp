@@ -72,22 +72,38 @@ expressions *parser::parse_expressions() {
     return result;
 }
 
-//<greedy> := <many><expressions>
-/*greedy *parser::parse_greedy(many* m) {
-    auto id_expressions = parse_expressions();
-    if(!id_expressions){
+//<greedy> := (<many>)<expressions>
+greedy *parser::parse_greedy() {
+
+    auto id_many = dynamic_cast<many*>(parse_expression()->children[0]);
+
+    if(!id_many){
         return nullptr;
     }
-    auto result = new greedy();
-    result->children.push_back(m);
-    result->children.push_back(id_expressions);
-    return result;
-}*/
 
-//<subexpression> := (<expressions>)
+    if(lex.get_current(it, last) == lexer::RPAREN){
+        it++;
+        auto result = new greedy();
+        result->children.push_back(id_many);
+        auto id_expressions = parse_expressions();
+        if(id_expressions != NULL){
+            result->children.push_back(id_expressions);
+        }
+        return result;
+    }
+    return nullptr;
+}
+
+//<subexpression> := (<expressions>) | <greedy>
 subexpression *parser::parse_subexpression() {
     if(lex.get_current(it, last) == lexer::LPAREN) {
         it++;
+        auto id_greedy = parse_greedy();
+        if(id_greedy){
+            auto sub = new subexpression();
+            sub->children.push_back(id_greedy);
+            return sub;
+        }
         auto id_expressions = parse_expressions();
         if(!id_expressions){
             throw std::invalid_argument("Couldn't resolve expressions");

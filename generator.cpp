@@ -24,10 +24,9 @@
        /,_|  |   /,_/   /
           /,_/      '`-'
  */
+
 IT sub_start;
 IT sub_stop;
-int curr;
-int lvl;
 
 generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
 
@@ -37,37 +36,19 @@ std::ostream& operator<<(std::ostream& out, const text& t){
 }
 
 void generator::get_result() {
-    lvl = 0;
     if(matcher != nullptr){
         IT begin = input.begin();
         IT end = input.end();
         for(IT it = begin; it < end; it++, begin++) {
-            curr = 0;
             if(matcher->evaluate(it, end)){
-                if(lvl > 0) {
-                    for (; begin < sub_start; begin++) {
-                        std::cout << *begin;
-                    }
-                    for (; sub_start != sub_stop; sub_start++, begin++) {
-                        t.set_text(sub_start);
-                        std::cout << t;
-                    }
-                    for (; begin < it; begin++) {
-                        std::cout << *begin;
-                    }
-                    if(begin < end){
-                        std::cout << *it;
-                        t.update();
-                    }
-                }else{
-                    for (; begin != it; begin++) {
-                        t.set_text(begin);
-                        std::cout << t;
-                    }
-                    t.set_text(it);
+                for(; begin < sub_start; begin++){ std::cout << *begin; }
+                for(; sub_start <= sub_stop; sub_start++, begin++){
+                    t.set_text(sub_start);
                     std::cout << t;
-                    t.update();
                 }
+                t.update();
+                sub_stop++;
+                for(; sub_stop < std::next(it); sub_stop++){ std::cout << *sub_stop; }
                 continue;
             }
             std::cout << *it;
@@ -79,26 +60,20 @@ void generator::get_result() {
 
 //<match> := <level>
 bool match::evaluate(IT &it, IT &last) {
-    return children[0]->evaluate(it, last);
-}
-
-void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
-    if(dynamic_cast<subexpression*>(children[0])){
-        levels.push_back(children[0]->children);
-        traverse_tree(children[0]->children, levels);
-    }else if(!dynamic_cast<string*>(children[0])){
-        traverse_tree(children[0]->children, levels);
+    if(children[0]->evaluate(it, last)){
+        return true;
     }
-    if(children.size() > 1){
-        traverse_tree(children[1]->children, levels);
-    }
+    return false;
 }
 
 //<level> := <expressions>\O{<digit>}
 bool level::evaluate(IT &it, IT &last) {
     lvl = *digit - '0';
+    if(lvl == 0){ sub_start = it; }
     IT start = it;
     if(children[0]->evaluate(it, last)){
+        if(lvl == 0){ sub_stop = it; }
+        current_lvl = 0;
         return true;
     }
     it = start;
@@ -122,34 +97,35 @@ bool expressions::evaluate(IT &it, IT &last) {
     throw std::runtime_error("Couldn't evaluate expressions");
 }
 
-/*bool greedy::evaluate(IT &it, IT &last) {
+bool greedy::evaluate(IT &it, IT &last) {
     IT start = it;
     if(children[0]->evaluate(it, last)){
-        if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
-
-        for(IT temp = it; start != it; it--){
-            if(children[1]->evaluate(temp, last)){
-                it = temp;
-                return true;
+        if(children.size() > 1) {
+            if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
+            for (IT temp = it; start != it; it--) {
+                if (children[1]->evaluate(temp, last)) {
+                    if(current_lvl == lvl){ sub_stop = it; }
+                    it = temp;
+                    return true;
+                }
+                temp = it;
             }
-            temp = it;
+        }else{
+            if(current_lvl == lvl){ sub_stop = it; }
+            return true;
         }
     }
     return false;
-}*/
+}
 
 //<subexpression> := (<expressions>)
 bool subexpression::evaluate(IT &it, IT &last) {
-    curr++;
-    if(lvl == curr){
-        sub_start = it;
-    }
-    if(dynamic_cast<expressions*>(children[0])){
+    current_lvl++;
+    if(lvl == current_lvl){ sub_start = it; }
+    if(dynamic_cast<expressions*>(children[0]) || dynamic_cast<greedy*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
         if(children[0]->evaluate(it, last)) {
-            if (lvl == curr) {
-                sub_stop = std::next(it);
-            }
+            if (lvl == current_lvl && sub_stop > it) { sub_stop = it; }
             return true;
         }
         return false;
@@ -253,3 +229,4 @@ bool letter::evaluate(IT &it, IT &last) {
 bool wildcard::evaluate(IT &it, IT &last) {
     return true;
 }
+

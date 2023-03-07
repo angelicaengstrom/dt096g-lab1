@@ -11,11 +11,20 @@
 
 using IT = std::string::iterator;
 
-struct base{
-    virtual bool evaluate(IT &it, IT &last) = 0;
-    std::vector<base*> children;
-    bool ignore = false;
-};
+namespace {
+    struct base {
+        static int lvl;
+        static int current_lvl;
+
+        virtual bool evaluate(IT &it, IT &last) = 0;
+
+        std::vector<base *> children;
+        bool ignore = false;
+    };
+
+    int base::lvl = 0;
+    int base::current_lvl = 0;
+}
 
 struct match:base{
     bool evaluate(IT &it, IT &last) override;
@@ -30,9 +39,9 @@ struct expressions:base{
     bool evaluate(IT &it, IT &last) override;
 };
 
-/*struct greedy:base{
+struct greedy:base{
     bool evaluate(IT &it, IT &last) override;
-};*/
+};
 
 struct subexpression:base{
     bool evaluate(IT &it, IT &last) override;

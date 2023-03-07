@@ -15,6 +15,7 @@ class parser {
     expressions* parse_expressions();
     expression* parse_expression();
     subexpression* parse_subexpression();
+    greedy* parse_greedy();
     either* parse_either(operand* op);
     many* parse_many(operand* op);
     count* parse_count(operand* op);
