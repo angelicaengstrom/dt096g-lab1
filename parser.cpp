@@ -63,6 +63,11 @@ expressions *parser::parse_expressions() {
         return nullptr;
     }
     auto result = new expressions();
+    auto id_many = dynamic_cast<many*>(id_expression->children[0]);
+    if(id_many != NULL){
+        result->children.push_back(parse_greedy(id_many));
+        return result;
+    }
     result->children.push_back(id_expression);
 
     auto new_expression = parse_expressions();
@@ -72,46 +77,42 @@ expressions *parser::parse_expressions() {
     return result;
 }
 
-//<greedy> := (<many>)<expressions>
-greedy *parser::parse_greedy() {
-
-    auto id_many = dynamic_cast<many*>(parse_expression()->children[0]);
-
-    if(!id_many){
-        return nullptr;
+//<greedy> := (<many>)<expressions> | <many><expressions>
+greedy *parser::parse_greedy(many* m) {
+    auto result = new greedy();
+    result->children.push_back(m);
+    auto id_expressions = parse_expressions();
+    if(id_expressions != NULL){
+        result->children.push_back(id_expressions);
     }
-
-    if(lex.get_current(it, last) == lexer::RPAREN){
-        it++;
-        auto result = new greedy();
-        result->children.push_back(id_many);
-        auto id_expressions = parse_expressions();
-        if(id_expressions != NULL){
-            result->children.push_back(id_expressions);
-        }
-        return result;
-    }
-    return nullptr;
+    return result;
 }
 
-//<subexpression> := (<expressions>) | <greedy>
+//<subexpression> := (<expressions>)
 subexpression *parser::parse_subexpression() {
     if(lex.get_current(it, last) == lexer::LPAREN) {
         it++;
-        auto id_greedy = parse_greedy();
+        /*auto id_greedy = parse_greedy();
         if(id_greedy){
             auto sub = new subexpression();
             sub->children.push_back(id_greedy);
             return sub;
-        }
+        }*/
         auto id_expressions = parse_expressions();
         if(!id_expressions){
             throw std::invalid_argument("Couldn't resolve expressions");
         }
         if(lex.get_current(it, last) == lexer::RPAREN){
-            auto sub = new subexpression();
-            sub->children.push_back(id_expressions);
             it++;
+            auto sub = new subexpression();
+            auto id_greedy = dynamic_cast<greedy*>(id_expressions->children[0]);
+            if(id_greedy){
+                auto next_expression = parse_expressions();
+                if(next_expression != NULL){
+                    id_expressions->children[0]->children.push_back(next_expression);
+                }
+            }
+            sub->children.push_back(id_expressions);
             return sub;
         }
         throw std::invalid_argument("Couldn't resolve subexpression");

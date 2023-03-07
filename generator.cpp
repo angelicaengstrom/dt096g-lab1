@@ -70,6 +70,7 @@ bool match::evaluate(IT &it, IT &last) {
 bool level::evaluate(IT &it, IT &last) {
     lvl = *digit - '0';
     if(lvl == 0){ sub_start = it; }
+    sub_stop = last;
     IT start = it;
     if(children[0]->evaluate(it, last)){
         if(lvl == 0){ sub_stop = it; }
@@ -82,7 +83,7 @@ bool level::evaluate(IT &it, IT &last) {
 
 //<expressions> := <expression> | <expression><expressions>
 bool expressions::evaluate(IT &it, IT &last) {
-    if(dynamic_cast<expression*>(children[0]) /*|| dynamic_cast<greedy*>(children[0])*/) {
+    if(dynamic_cast<expression*>(children[0]) || dynamic_cast<greedy*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
         if(children[0]->evaluate(it, last)) {
             if (children.size() > 1) {
@@ -122,10 +123,10 @@ bool greedy::evaluate(IT &it, IT &last) {
 bool subexpression::evaluate(IT &it, IT &last) {
     current_lvl++;
     if(lvl == current_lvl){ sub_start = it; }
-    if(dynamic_cast<expressions*>(children[0]) || dynamic_cast<greedy*>(children[0])){
+    if(dynamic_cast<expressions*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
         if(children[0]->evaluate(it, last)) {
-            if (lvl == current_lvl && sub_stop > it) { sub_stop = it; }
+            if (lvl == current_lvl && sub_stop == last) { sub_stop = it; }
             return true;
         }
         return false;
