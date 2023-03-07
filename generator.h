@@ -30,9 +30,9 @@ struct expressions:base{
     bool evaluate(IT &it, IT &last) override;
 };
 
-struct greedy:base{
+/*struct greedy:base{
     bool evaluate(IT &it, IT &last) override;
-};
+};*/
 
 struct subexpression:base{
     bool evaluate(IT &it, IT &last) override;

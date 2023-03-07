@@ -105,7 +105,7 @@ bool level::evaluate(IT &it, IT &last) {
 
 //<expressions> := <expression> | <expression><expressions>
 bool expressions::evaluate(IT &it, IT &last) {
-    if(dynamic_cast<expression*>(children[0]) || dynamic_cast<greedy*>(children[0])) {
+    if(dynamic_cast<expression*>(children[0]) /*|| dynamic_cast<greedy*>(children[0])*/) {
         if(ignore){ children[0]->ignore = true; }
         if(children[0]->evaluate(it, last)) {
             if (children.size() > 1) {
@@ -120,7 +120,7 @@ bool expressions::evaluate(IT &it, IT &last) {
     throw std::runtime_error("Couldn't evaluate expressions");
 }
 
-bool greedy::evaluate(IT &it, IT &last) {
+/*bool greedy::evaluate(IT &it, IT &last) {
     IT start = it;
     if(children[0]->evaluate(it, last)){
         if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
@@ -134,7 +134,7 @@ bool greedy::evaluate(IT &it, IT &last) {
         }
     }
     return false;
-}
+}*/
 
 //<subexpression> := (<expressions>)
 bool subexpression::evaluate(IT &it, IT &last) {

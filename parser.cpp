@@ -56,21 +56,13 @@ level *parser::parse_level() {
     return lvl;
 }
 
-//<expressions> := <expression> | <expression><expressions> | <greedy>
+//<expressions> := <expression> | <expression><expressions>
 expressions *parser::parse_expressions() {
     auto id_expression = parse_expression();
     if(!id_expression){
         return nullptr;
     }
     auto result = new expressions();
-    auto m = dynamic_cast<many*>(id_expression->children[0]);
-    if(m) {
-        auto id_greedy = parse_greedy(m);
-        if (id_greedy) {
-            result->children.push_back(id_greedy);
-            return result;
-        }
-    }
     result->children.push_back(id_expression);
 
     auto new_expression = parse_expressions();
@@ -81,7 +73,7 @@ expressions *parser::parse_expressions() {
 }
 
 //<greedy> := <many><expressions>
-greedy *parser::parse_greedy(many* m) {
+/*greedy *parser::parse_greedy(many* m) {
     auto id_expressions = parse_expressions();
     if(!id_expressions){
         return nullptr;
@@ -90,7 +82,7 @@ greedy *parser::parse_greedy(many* m) {
     result->children.push_back(m);
     result->children.push_back(id_expressions);
     return result;
-}
+}*/
 
 //<subexpression> := (<expressions>)
 subexpression *parser::parse_subexpression() {
