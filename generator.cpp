@@ -52,11 +52,13 @@ void generator::get_result() {
                         t.set_text(sub_start);
                         std::cout << t;
                     }
-                    for (; begin != it; begin++) {
+                    for (; begin < it; begin++) {
                         std::cout << *begin;
                     }
-                    std::cout << *it;
-                    t.update();
+                    if(begin < end){
+                        std::cout << *it;
+                        t.update();
+                    }
                 }else{
                     for (; begin != it; begin++) {
                         t.set_text(begin);
