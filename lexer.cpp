@@ -41,7 +41,7 @@ lexer::token lexer::lookup(IT it, IT last) {
     throw std::invalid_argument("Unknown lexeme");
 }
 
-void lexer::set_current_token(IT& it, IT& last) {
+[[maybe_unused]] void lexer::set_current_token(IT& it, IT& last) {
     set_current_token(lookup(it, last));
 }
 
@@ -50,6 +50,6 @@ lexer::token lexer::get_current(IT& it, IT& last) {
     return get_current_token();
 }
 
-lexer::token lexer::get_next(IT& it, IT& last) {
+[[maybe_unused]] lexer::token lexer::get_next(IT& it, IT& last) {
     return lookup(++it, last);;
 }

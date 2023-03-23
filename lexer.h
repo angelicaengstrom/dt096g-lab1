@@ -15,18 +15,18 @@ public:
         EITHER_OP, MANY_OP,
         WILDCARD, DIGIT, LETTER,
         LEVEL_OP, IGNORE_OP,
-        UNKNOWN, END
+        UNKNOWN [[maybe_unused]], END
     };
 
     [[nodiscard]] token get_current_token() const;
 
     void set_current_token(token token);
 
-    void set_current_token(IT& it, IT& last);
+    [[maybe_unused]] void set_current_token(IT& it, IT& last);
 
     token get_current(IT& it, IT& last);
 
-    token get_next(IT& it, IT& last);
+    [[maybe_unused]] token get_next(IT& it, IT& last);
 private:
     token lookup(IT it, IT last);
     token current_token;
