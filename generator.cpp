@@ -98,7 +98,7 @@ bool expressions::evaluate(IT &it, IT &last) {
     throw std::runtime_error("Couldn't evaluate expressions");
 }
 
-//<greedy> := <many><expressions> | <many><expressions>)<expressions> | <many>)<expressions> | (<many>) | <many><expressions>)
+//<greedy> := <many><expressions> | <many><expressions>)<expressions> | <many>)<expressions> | <many>) | <many><expressions>)
 bool greedy::evaluate(IT &it, IT &last) {
     IT start = it;
     if(children[0]->evaluate(it, last)){

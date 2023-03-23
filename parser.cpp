@@ -55,7 +55,7 @@ level *parser::parse_level() {
     return lvl;
 }
 
-//<expressions> := <expression> | <expression><expressions>
+//<expressions> := <expression> | <expression><expressions> | <greedy> | <greedy><expressions>
 expressions *parser::parse_expressions() {
     auto id_expression = parse_expression();
     if(!id_expression){
@@ -65,7 +65,6 @@ expressions *parser::parse_expressions() {
     auto id_many = dynamic_cast<many*>(id_expression->children[0]);
     if(id_many != NULL){
         result->children.push_back(parse_greedy(id_many));
-        //return result;
     }else{
         result->children.push_back(id_expression);
     }
@@ -77,7 +76,7 @@ expressions *parser::parse_expressions() {
     return result;
 }
 
-//<greedy> := (<many>)<expressions> | <many><expressions>
+//<greedy> := <many><expressions> | <many><expressions>)<expressions> | <many>)<expressions> | <many>) | <many><expressions>)
 greedy *parser::parse_greedy(many* m) {
     auto result = new greedy();
     result->children.push_back(m);
@@ -88,7 +87,7 @@ greedy *parser::parse_greedy(many* m) {
     return result;
 }
 
-//<subexpression> := (<expressions>)
+//<subexpression> := (<expressions>) | (<greedy> | (<expressions><greedy>
 subexpression *parser::parse_subexpression() {
     if(lex.get_current(it, last) == lexer::LPAREN) {
         it++;
@@ -144,7 +143,7 @@ either *parser::parse_either(operand* op) {
         it++;
         auto id_operand = parse_operand();
         if(!id_operand){
-            throw std::invalid_argument("Couldn't resolve either '+'");
+            throw std::invalid_argument("Couldn't resolve either");
         }
         auto e = new either();
 
@@ -201,6 +200,7 @@ ignore *parser::parse_ignore(string* s) {
     }
     return nullptr;
 }
+
 //<ignore> := <subexpression>\I | <string>\I
 ignore *parser::parse_ignore(subexpression* sub) {
     if(lex.get_current(it, last) == lexer::IGNORE_OP){
