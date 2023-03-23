@@ -15,18 +15,20 @@ class parser {
     expressions* parse_expressions();
     expression* parse_expression();
     subexpression* parse_subexpression();
+    greedy* parse_greedy(many* m);
     either* parse_either(operand* op);
     many* parse_many(operand* op);
     count* parse_count(operand* op);
     operand* parse_operand();
-    ignore* parse_ignore();
+    ignore* parse_ignore(string* s);
+    ignore* parse_ignore(subexpression* sub);
     string* parse_string();
     match* matcher{};
     lexer lex{};
-    std::string::iterator it;
-    std::string::iterator last;
+    IT it;
+    IT last;
 public:
-    parser(std::string::iterator first, std::string::iterator last);
+    parser(IT first, IT last);
     [[nodiscard]] match *get_match() const;
     void set_match(match *matcher);
 };

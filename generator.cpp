@@ -4,108 +4,156 @@
 #include <algorithm>
 #include <iostream>
 
+/* WARNING: the code that follows will make you cry:
+ *          a safety pig is provided below for your benefit
+ *
+ *
+ *
+ *                          _
+ _._ _..._ .-',     _.._(`))
+'-. `     '  /-._.-'    ',/
+   )         \            '.
+  / _    _    |             \
+ |  a    a    /              |
+ \   .-.                     ;
+  '-('' ).-'       ,'       ;
+     '-;           |      .'
+        \           \    /
+        | 7  .__  _.-\   \
+        | |  |  ``/  /`  /
+       /,_|  |   /,_/   /
+          /,_/      '`-'
+ */
+
+IT lvl_start;
+IT lvl_stop;
+
 generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
+
+std::ostream& operator<<(std::ostream& out, const text& t){
+    out << t.get_text();
+    return out;
+}
 
 void generator::get_result() {
     if(matcher != nullptr){
-        matcher->evaluate(input.begin(), input.end());
+        IT begin = input.begin();
+        IT end = input.end();
+        for(IT it = begin; it < end; it++, begin++) {
+            if(matcher->evaluate(it, end)){
+                for(; begin < lvl_start; begin++){ std::cout << *begin; }
+                for(; lvl_start <= lvl_stop; lvl_start++, begin++){
+                    t.set_text(lvl_start);
+                    std::cout << t;
+                }
+                t.update();
+                lvl_stop++;
+                for(; lvl_stop < std::next(it); lvl_stop++){ std::cout << *lvl_stop; }
+                continue;
+            }
+            std::cout << *it;
+        }
         return;
     }
     throw std::invalid_argument("Couldn't resolve match");
 }
 
 //<match> := <level>
-std::string match::evaluate(IT it, IT last) {
-    for(; it < last; it++){
-        std::string s = children[0]->evaluate(it, last);
-        if(!s.empty()){
-            IT start = dynamic_cast<level*>(children[0])->start;
-            for(;it != start; it++){ std::cout << *it; }
-
-            std::cout << "\x1B[32m" + s + "\033[0m";
-            it = it + (int)s.size() - 1;
-            continue;
-        }
-        std::cout << *it;
+bool match::evaluate(IT &it, IT &last) {
+    if(children[0]->evaluate(it, last)){
+        return true;
     }
-    return {};
-}
-
-void traverse_tree(const std::vector<base*>& children, std::vector<std::vector<base*>>& levels){
-    if(dynamic_cast<subexpression*>(children[0])){
-        levels.push_back(children[0]->children);
-        traverse_tree(children[0]->children, levels);
-    }else if(!dynamic_cast<string*>(children[0])){
-        traverse_tree(children[0]->children, levels);
-    }
-    if(children.size() > 1){
-        traverse_tree(children[1]->children, levels);
-    }
+    return false;
 }
 
 //<level> := <expressions>\O{<digit>}
-std::string level::evaluate(IT it, IT last) {
-    if(!children[0]->evaluate(it, last).empty()) {
-        std::vector<std::vector<base*>> nodes;
-        nodes.push_back(children);
-        traverse_tree(children, nodes);
-
-        int index = *digit - '0';
-        if(nodes.size() - 1 < index){ throw std::invalid_argument("Couldn't resolve levels"); }
-
-        for(int i = 0; i < index + 1; i++) {
-            for (; it != last; it++) {
-                if (!nodes[i][0]->evaluate(it, last).empty()) {
-                    break;
-                }
-            }
-        }
-        start = it;
-        return nodes[index][0]->evaluate(it, last);
+bool level::evaluate(IT &it, IT &last) {
+    lvl = *digit - '0';
+    if(lvl == 0){ lvl_start = it; }
+    lvl_stop = last;
+    IT start = it;
+    if(children[0]->evaluate(it, last)){
+        if(lvl == 0){ lvl_stop = it; }
+        current_lvl = 0;
+        return true;
     }
-    return {};
+    it = start;
+    return false;
 }
 
 //<expressions> := <expression> | <expression><expressions>
-std::string expressions::evaluate(IT it, IT last) {
-    if(dynamic_cast<expression*>(children[0])) {
-        std::string result = children[0]->evaluate(it, last);
-        if(!result.empty()){
-            if(ignore){ children[0]->ignore = true; }
-            if(children.size() > 1){
-                std::string next_result = children[1]->evaluate(it + (int)result.size(), last);
-                if(next_result.empty()){
-                    return {};
+bool expressions::evaluate(IT &it, IT &last) {
+    if(dynamic_cast<expression*>(children[0]) || dynamic_cast<greedy*>(children[0])) {
+        if(ignore){ children[0]->ignore = true; }
+        if(children[0]->evaluate(it, last)) {
+            if (children.size() > 1) {
+                if (!children[1]->evaluate(++it, last)) {
+                    return false;
                 }
-                return result + next_result;
             }
-            return result;
+            return true;
         }
-        return {};
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate expressions");
 }
 
+//<greedy> := <many><expressions> | <many><expressions>)<expressions> | <many>)<expressions> | <many>) | <many><expressions>)
+bool greedy::evaluate(IT &it, IT &last) {
+    IT start = it;
+    if(children[0]->evaluate(it, last)){
+        if(children.size() > 1) {
+            if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
+            for(IT temp = it; temp != start; temp--){
+                if(current_lvl == lvl){ lvl_stop = temp; }
+                if(children[1] == nullptr){ return true; }
+                if(children[1]->evaluate(it, last)){
+                    if(children.size() > 2){
+                        if(current_lvl == lvl){ lvl_stop = it; }
+                        if(children[2] == nullptr){ return true; }
+                        if(children[2]->evaluate(++it, last)){ return true; }
+                    }else{
+                        return true;
+                    }
+                }
+                it = temp;
+            }
+            return false;
+        }else{
+            if(current_lvl == lvl){ lvl_stop = it; }
+            return true;
+        }
+    }
+    return false;
+}
+
 //<subexpression> := (<expressions>)
-std::string subexpression::evaluate(IT it, IT last) {
+bool subexpression::evaluate(IT &it, IT &last) {
+    current_lvl++;
+    if(lvl == current_lvl){ lvl_start = it; }
     if(dynamic_cast<expressions*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
-        return children[0]->evaluate(it, last);
+        if(children[0]->evaluate(it, last)) {
+            if (lvl == current_lvl && lvl_stop == last) { lvl_stop = it; }
+            return true;
+        }
+        current_lvl--;
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate subexpression");
 }
 
-//<ignore> := <operand>\I
-std::string ignore::evaluate(IT it, IT last) {
+//<ignore> := <subexpression>\I | <string>\I
+bool ignore::evaluate(IT &it, IT &last) {
     for(auto child : children){
         child->ignore = true;
         return child->evaluate(it, last);
     }
-    return {};
+    throw std::runtime_error("Couldn't evaluate ignore");
 }
 
 //<expression> := <operand> | <either> | <many> | <count>
-std::string expression::evaluate(IT it, IT last) {
+bool expression::evaluate(IT &it, IT &last) {
     for(auto child : children){
         if(ignore){ child->ignore = true; }
         return child->evaluate(it, last);
@@ -114,88 +162,82 @@ std::string expression::evaluate(IT it, IT last) {
 }
 
 //<either> := <operand>+<operand> | <operand>+<either>
-std::string either::evaluate(IT it, IT last){
+bool either::evaluate(IT &it, IT &last){
+    IT start = it;
     for(auto child : children){
         if(ignore){ child->ignore = true; }
-        if(!child->evaluate(it, last).empty()){
-            return child->evaluate(it, last);
+        if(child->evaluate(start, last)){
+            it = start;
+            return true;
         }
     }
-    return {};
+    return false;
 }
 
 //<many> := <operand>*
-std::string many::evaluate(IT it, IT last) {
+bool many::evaluate(IT &it, IT &last) {
     if(ignore){ children[0]->ignore = true; }
     if(it < last) {
-        std::string result = children[0]->evaluate(it, last);
-        if (!result.empty()) {
-            std::string next_result = children[0]->evaluate(it + (int)result.size(), last);
-            if (!next_result.empty()) {
-                return result + evaluate(it + (int)result.size(), last);
+        if (children[0]->evaluate(it, last)) {
+            IT stop = it;
+            if(!evaluate(++it, last)){
+                it = stop;
             }
-            return result;
+            return true;
         }
     }
-    return {};
+    return false;
 }
 
 //<count> := <operand>{<digit>}
-std::string count::evaluate(IT it, IT last) {
-    std::string eval;
-    std::string result = children[0]->evaluate(it, last);
+bool count::evaluate(IT &it, IT &last){
+    if(*digit - '0' == 0){ return false; }
+    IT stop;
     for(int i = 0; i < *digit - '0'; i++){
-        if (children[0]->evaluate(it + i * (int)result.size(), last).empty()) {
-            return {};
+        if (!children[0]->evaluate(it, last)) {
+            return false;
         }
-        eval += children[0]->evaluate(it + i * (int)result.size(), last);
+        stop = it++;
     }
-    return eval;
+    it = stop;
+    return true;
 }
 
 //<operand> := <string> | <subexpression>
-std::string operand::evaluate(IT it, IT last) {
-    if(dynamic_cast<string*>(children[0]) || dynamic_cast<subexpression*>(children[0])){
-        if(ignore){ children[0]->ignore = true; }
-        return children[0]->evaluate(it, last);
-    }
-    throw std::runtime_error("Couldn't evaluate operand");
+bool operand::evaluate(IT &it, IT &last) {
+    if(ignore){ children[0]->ignore = true; }
+    return children[0]->evaluate(it, last);
 }
 
 //<string> := <letter> | <wildcard> | <letter><string> | <wildcard><string>
-std::string string::evaluate(IT it, IT last) {
+bool string::evaluate(IT &it, IT &last) {
     if(dynamic_cast<wildcard*>(children[0]) || dynamic_cast<letter*>(children[0])) {
         if(ignore){ children[0]->ignore = true; }
-        std::string result = children[0]->evaluate(it, last);
-        if (children.size() > 1) {
-            if(dynamic_cast<string*>(children[1])) {
-                if(ignore){ children[1]->ignore = true; }
+        if(children[0]->evaluate(it, last)) {
+            if (children.size() > 1) {
+                if (dynamic_cast<string *>(children[1])) {
+                    if (ignore) { children[1]->ignore = true; }
 
-                std::string next_result = children[1]->evaluate(it + 1, it + 2);
-                if (result.empty() || next_result.empty()) {
-                    return {};
+                    if (!children[1]->evaluate(++it, last)) {
+                        return false;
+                    }
                 }
-                return result + next_result;
             }
+            return true;
         }
-        return result;
+        return false;
     }
     throw std::runtime_error("Couldn't evaluate string");
 }
 
-std::string letter::evaluate(IT it, IT last) {
+bool letter::evaluate(IT &it, IT &last) {
     if(ignore){
-        if(*it == std::tolower(*letter) || *it == std::toupper(*letter)){
-            return std::string{ *it };
-        }
-    }else{
-        if (*it == *letter) {
-            return std::string{ *it };
-        }
+        return *it == std::tolower(*letter) || *it == std::toupper(*letter);
     }
-    return {};
+    return *it == *letter;
 }
 
-std::string wildcard::evaluate(IT it, IT last) {
-    return std::string{ *it };
+bool wildcard::evaluate(IT &it, IT &last) {
+    return true;
 }
+
