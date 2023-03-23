@@ -25,8 +25,8 @@
           /,_/      '`-'
  */
 
-IT sub_start;
-IT sub_stop;
+IT lvl_start;
+IT lvl_stop;
 
 generator::generator(match *m, std::string input): matcher(m), input(std::move(input)){}
 
@@ -41,14 +41,14 @@ void generator::get_result() {
         IT end = input.end();
         for(IT it = begin; it < end; it++, begin++) {
             if(matcher->evaluate(it, end)){
-                for(; begin < sub_start; begin++){ std::cout << *begin; }
-                for(; sub_start <= sub_stop; sub_start++, begin++){
-                    t.set_text(sub_start);
+                for(; begin < lvl_start; begin++){ std::cout << *begin; }
+                for(; lvl_start <= lvl_stop; lvl_start++, begin++){
+                    t.set_text(lvl_start);
                     std::cout << t;
                 }
                 t.update();
-                sub_stop++;
-                for(; sub_stop < std::next(it); sub_stop++){ std::cout << *sub_stop; }
+                lvl_stop++;
+                for(; lvl_stop < std::next(it); lvl_stop++){ std::cout << *lvl_stop; }
                 continue;
             }
             std::cout << *it;
@@ -69,11 +69,11 @@ bool match::evaluate(IT &it, IT &last) {
 //<level> := <expressions>\O{<digit>}
 bool level::evaluate(IT &it, IT &last) {
     lvl = *digit - '0';
-    if(lvl == 0){ sub_start = it; }
-    sub_stop = last;
+    if(lvl == 0){ lvl_start = it; }
+    lvl_stop = last;
     IT start = it;
     if(children[0]->evaluate(it, last)){
-        if(lvl == 0){ sub_stop = it; }
+        if(lvl == 0){ lvl_stop = it; }
         current_lvl = 0;
         return true;
     }
@@ -98,21 +98,29 @@ bool expressions::evaluate(IT &it, IT &last) {
     throw std::runtime_error("Couldn't evaluate expressions");
 }
 
+//<greedy> := <many><expressions> | <many><expressions>)<expressions> | <many>)<expressions> | (<many>) | <many><expressions>)
 bool greedy::evaluate(IT &it, IT &last) {
     IT start = it;
     if(children[0]->evaluate(it, last)){
         if(children.size() > 1) {
             if (std::next(it) < last){ return children[1]->evaluate(++it, last); }
-            for (IT temp = it; start != it; it--) {
-                if (children[1]->evaluate(temp, last)) {
-                    if(current_lvl == lvl){ sub_stop = it; }
-                    it = temp;
-                    return true;
+            for(IT temp = it; temp != start; temp--){
+                if(current_lvl == lvl){ lvl_stop = temp; }
+                if(children[1] == nullptr){ return true; }
+                if(children[1]->evaluate(it, last)){
+                    if(children.size() > 2){
+                        if(current_lvl == lvl){ lvl_stop = it; }
+                        if(children[2] == nullptr){ return true; }
+                        if(children[2]->evaluate(++it, last)){ return true; }
+                    }else{
+                        return true;
+                    }
                 }
-                temp = it;
+                it = temp;
             }
+            return false;
         }else{
-            if(current_lvl == lvl){ sub_stop = it; }
+            if(current_lvl == lvl){ lvl_stop = it; }
             return true;
         }
     }
@@ -122,13 +130,14 @@ bool greedy::evaluate(IT &it, IT &last) {
 //<subexpression> := (<expressions>)
 bool subexpression::evaluate(IT &it, IT &last) {
     current_lvl++;
-    if(lvl == current_lvl){ sub_start = it; }
+    if(lvl == current_lvl){ lvl_start = it; }
     if(dynamic_cast<expressions*>(children[0])){
         if(ignore){ children[0]->ignore = true; }
         if(children[0]->evaluate(it, last)) {
-            if (lvl == current_lvl && sub_stop == last) { sub_stop = it; }
+            if (lvl == current_lvl && lvl_stop == last) { lvl_stop = it; }
             return true;
         }
+        current_lvl--;
         return false;
     }
     throw std::runtime_error("Couldn't evaluate subexpression");
@@ -182,6 +191,7 @@ bool many::evaluate(IT &it, IT &last) {
 
 //<count> := <operand>{<digit>}
 bool count::evaluate(IT &it, IT &last){
+    if(*digit - '0' == 0){ return false; }
     IT stop;
     for(int i = 0; i < *digit - '0'; i++){
         if (!children[0]->evaluate(it, last)) {

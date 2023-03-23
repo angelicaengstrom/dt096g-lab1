@@ -5,7 +5,6 @@
 #include "parser.h"
 
 parser::parser(IT first, IT last):it(first), last(last) {
-    //matcher = parse_match();
     set_match(parse_match());
 }
 
@@ -66,9 +65,10 @@ expressions *parser::parse_expressions() {
     auto id_many = dynamic_cast<many*>(id_expression->children[0]);
     if(id_many != NULL){
         result->children.push_back(parse_greedy(id_many));
-        return result;
+        //return result;
+    }else{
+        result->children.push_back(id_expression);
     }
-    result->children.push_back(id_expression);
 
     auto new_expression = parse_expressions();
     if(new_expression){
@@ -92,12 +92,6 @@ greedy *parser::parse_greedy(many* m) {
 subexpression *parser::parse_subexpression() {
     if(lex.get_current(it, last) == lexer::LPAREN) {
         it++;
-        /*auto id_greedy = parse_greedy();
-        if(id_greedy){
-            auto sub = new subexpression();
-            sub->children.push_back(id_greedy);
-            return sub;
-        }*/
         auto id_expressions = parse_expressions();
         if(!id_expressions){
             throw std::invalid_argument("Couldn't resolve expressions");
@@ -108,9 +102,7 @@ subexpression *parser::parse_subexpression() {
             auto id_greedy = dynamic_cast<greedy*>(id_expressions->children[0]);
             if(id_greedy){
                 auto next_expression = parse_expressions();
-                if(next_expression != NULL){
-                    id_expressions->children[0]->children.push_back(next_expression);
-                }
+                id_expressions->children[0]->children.push_back(next_expression);
             }
             sub->children.push_back(id_expressions);
             return sub;
@@ -212,7 +204,7 @@ ignore *parser::parse_ignore(string* s) {
 //<ignore> := <subexpression>\I | <string>\I
 ignore *parser::parse_ignore(subexpression* sub) {
     if(lex.get_current(it, last) == lexer::IGNORE_OP){
-        //it = it + 2;
+        it = it + 2;
         auto i = new ignore();
         i->children.push_back(sub);
         return i;
