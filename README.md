@@ -1,4 +1,4 @@
-#dt096g-lab1
+# dt096g-lab1
 Program som tillandahåller en implementering av ett likartat "regular expression" språk.
 
 Syntaxen beskrivs enligt BNF där
@@ -21,7 +21,7 @@ Syntaxen beskrivs enligt BNF där
 
 Implementeringen består i sin tur av en lexikal analys, syntax analys och run-time system, där syntax analysen implementerats enligt en **recursive-descent parser**
 
-##Lexikal analys
+## Lexikal analys
 Matchar mönster enligt BNF som kategoriseras i tokens
 
 ```c++
@@ -33,7 +33,7 @@ Matchar mönster enligt BNF som kategoriseras i tokens
     };
 ```
 
-##Recursive-descent parser
+## Recursive-descent parser
 Konstruerar parseträd som nyttjar polymorfism. Där grammatiken utvärderas från topp till botten.
 
 ```c++
